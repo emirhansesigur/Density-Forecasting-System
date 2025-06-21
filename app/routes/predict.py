@@ -2,8 +2,8 @@ from fastapi import APIRouter
 
 router = APIRouter()
 
-@router.get("/users")
-def get_users():
+@router.post("/predictByDay")
+def predictUsersByDay(input_data: dict):
     # Örnek kullanıcı verisi
     users = [
         {"id": 1, "name": "Ali"},
