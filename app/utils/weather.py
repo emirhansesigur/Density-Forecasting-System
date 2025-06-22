@@ -25,29 +25,10 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
 
     response = requests.get(url)
     data = response.json()
-    print("Weather data for daily:")
-    print(data)
-    
-    # Saatlik verileri al
-    times = data['hourly']['time']
-    temperatures = data['hourly']['temperature_2m']
-    humidities = data['hourly']['relative_humidity_2m']
-    precipitations = data['hourly']['precipitation']
-    # dt'yi ISO formatına çevir (örn: "2025-07-01T12:00")
-    dt_str = dt.strftime("%Y-%m-%dT%H:00")
-    if dt_str in times:
-        idx = times.index(dt_str)
-        temperature = temperatures[idx]
-        humidity = humidities[idx]
-        precipitation = precipitations[idx]
-        print(f"Weather for {dt_str}: {temperature}°C, {humidity}%, {precipitation}mm")
-        return {
-            "temperature": temperature,
-            "humidity": humidity,
-            "precipitation": precipitation
-        }
-    else:
-        raise ValueError(f"{dt_str} için hava durumu verisi bulunamadı.")
+
+
+    # Tüm saatlik verileri döndür
+    return data
 
 
 
