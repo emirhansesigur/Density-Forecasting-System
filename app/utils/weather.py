@@ -5,6 +5,10 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
     Belirtilen tarih ve saat için sıcaklık, nem ve yağış değerlerini döndürür.
     dt: datetime.datetime nesnesi
     """
+
+    # Sadece tarih kısmını al (örnek: "2025-06-23")
+    date_str = dt.date().isoformat()
+
     HOURLY_PARAMS = [
         "temperature_2m",
         "relative_humidity_2m",
@@ -14,14 +18,16 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
         f"https://api.open-meteo.com/v1/forecast?"
         f"latitude={latitude}&longitude={longitude}"
         f"&hourly={','.join(HOURLY_PARAMS)}"
-        f"&forecast_days=7"
+        f"&start_date={date_str}"
+        f"&end_date={date_str}"
         f"&timezone={timezone.replace('/', '%2F')}"
     )
-    print(f"Weather API URL: {url}")  # Debugging için URL'yi yazdır
-    
+
     response = requests.get(url)
     data = response.json()
-
+    print("Weather data for daily:")
+    print(data)
+    
     # Saatlik verileri al
     times = data['hourly']['time']
     temperatures = data['hourly']['temperature_2m']
@@ -34,6 +40,7 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
         temperature = temperatures[idx]
         humidity = humidities[idx]
         precipitation = precipitations[idx]
+        print(f"Weather for {dt_str}: {temperature}°C, {humidity}%, {precipitation}mm")
         return {
             "temperature": temperature,
             "humidity": humidity,
@@ -58,11 +65,12 @@ def get_weather_for_date_hourly(latitude, longitude, dt, timezone="Europe/Istanb
         f"https://api.open-meteo.com/v1/forecast?"
         f"latitude={latitude}&longitude={longitude}"
         f"&hourly={','.join(HOURLY_PARAMS)}"
-        f"&forecast_days=7"
+        #f"&forecast_days=7"
         f"&timezone={timezone.replace('/', '%2F')}"
     )
     response = requests.get(url)
     data = response.json()
+
 
     # Saatlik verileri al
     times = data['hourly']['time']
@@ -76,6 +84,7 @@ def get_weather_for_date_hourly(latitude, longitude, dt, timezone="Europe/Istanb
         temperature = temperatures[idx]
         humidity = humidities[idx]
         precipitation = precipitations[idx]
+        print(f"Weather for {dt_str}: {temperature}°C, {humidity}%, {precipitation}mm")
         return {
             "temperature": temperature,
             "humidity": humidity,

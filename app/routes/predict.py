@@ -30,8 +30,8 @@ def PredictUsersByHour(input_data: dict):
 
         weather = get_weather_for_date_hourly(LATITUDE, LONGITUDE, zaman)
         
-        print("weather print edilitor")
-        print(weather)
+        # print("weather print edilitor")
+        # print(weather)
 
         features = {
             "saat": saat,
