@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI Frontend</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>FastAPI Frontend</h1>
+        
+        <!-- Backend'den veri çekme -->
+        <section class="data-section">
+            <h2>Backend'den Veri Çek</h2>
+            <button id="fetchDataBtn">Veri Çek</button>
+            <div id="dataResult"></div>
+        </section>
+        
+        <!-- Backend'e veri gönderme -->
+        <section class="form-section">
+            <h2>Backend'e Veri Gönder</h2>
+            <form id="dataForm">
+                <input type="text" id="nameInput" placeholder="İsim" required>
+                <input type="email" id="emailInput" placeholder="Email" required>
+                <button type="submit">Gönder</button>
+            </form>
+            <div id="submitResult"></div>
+        </section>
+    </div>
+    
+    <script src="static/js/app.js"></script>
+</body>
+</html>
