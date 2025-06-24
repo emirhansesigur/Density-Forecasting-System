@@ -4,30 +4,448 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Factory Ziyaretci Tahmin Sistemi</title>
-    <link rel="stylesheet" href="static/css/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        h2 {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        .data-section, .form-section, .chart-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .section-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            font-weight: bold;
+        }
+        button {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+            background: linear-gradient(45deg, #2980b9, #3498db);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+        }
+        #dataResult, #submitResult {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            min-height: 50px;
+            border-left: 4px solid #3498db;
+        }
+        .success {
+            background: linear-gradient(45deg, #d5f4e6, #a8e6cf);
+            color: #27ae60;
+            border-left: 4px solid #27ae60;
+        }
+        .error {
+            background: linear-gradient(45deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border-left: 4px solid #e74c3c;
+        }
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .chart-section {
+            display: none;
+        }
+        .chart-section.show {
+            display: block;
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Game Factory Ziyaretci Tahmin Sistemi</h1>
-        <h2>Antalya Şubesi</h2>
+        <h1>🎮 Game Factory</h1>
+        <h2>Ziyaretçi Tahmin Sistemi - Antalya Şubesi</h2>
+        
         <!-- Backend'den veri çekme -->
         <section class="data-section">
-            <button id="fetchDataBtn">Veri Çek</button>
+            <h3 class="section-title">🔌 Sistem Bağlantı Testi</h3>
+            <button id="fetchDataBtn">Bağlantıyı Test Et</button>
             <div id="dataResult"></div>
         </section>
-        
+       
         <!-- Günlük Ziyaret Edecek Kullanıcıların Sayısı -->
         <section class="form-section">
-            <h2>Günlük Ziyaret Edecek Kullanıcıların Sayısı</h2>
+            <h3 class="section-title">📊 Günlük Ziyaretçi Tahmini</h3>
             <form id="dataForm">
                 <input type="date" id="dateInput" required placeholder="Tarih (2025-07-01)">
-                <button type="submit">Gönder</button>
+                <button type="submit">🔮 Tahmin Et</button>
             </form>
             <div id="submitResult"></div>
-            <div id="predictionTable"></div>
+        </section>
+
+        <!-- Grafik Bölümü -->
+        <section class="chart-section" id="chartSection">
+            <h3 class="section-title">📈 Saatlik Ziyaretçi Tahmini Grafiği</h3>
+            <div class="chart-container">
+                <canvas id="predictionsChart"></canvas>
+            </div>
+            <div class="stats-grid" id="statsGrid"></div>
         </section>
     </div>
-    
-    <script src="static/js/app.js"></script>
+   
+    <script>
+        // Backend API base URL
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        let predictionsChart = null;
+
+        // DOM yüklendiğinde çalışacak
+        document.addEventListener('DOMContentLoaded', function() {
+            // Veri çekme butonu
+            const fetchDataBtn = document.getElementById('fetchDataBtn');
+            const dataResult = document.getElementById('dataResult');
+            
+            // Form elementi
+            const dataForm = document.getElementById('dataForm');
+            const submitResult = document.getElementById('submitResult');
+            
+            // Backend'den veri çekme
+            fetchDataBtn.addEventListener('click', async function() {
+                try {
+                    showLoading(dataResult);
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/users`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    showSuccess(dataResult, `✅ Bağlantı Başarılı! Data: ${JSON.stringify(data)}`);
+                    
+                } catch (error) {
+                    showError(dataResult, `❌ Bağlantı Hatası: ${error.message}`);
+                }
+            });
+            
+            // Form gönderme
+            dataForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const dateRaw = document.getElementById('dateInput').value;
+                if (!dateRaw) {
+                    showError(submitResult, '⚠️ Lütfen bir tarih giriniz.');
+                    return;
+                }
+                
+                // Tarih formatını YYYY-MM-DD olarak al
+                const date = new Date(dateRaw);
+                const formattedDate = date.toISOString().slice(0, 10);
+                
+                console.log('Gönderilen tarih:', formattedDate);
+                
+                try {
+                    showLoading(submitResult);
+                    
+                    const requestBody = { zaman: formattedDate };
+                    console.log('Request body:', requestBody);
+                    
+                    const response = await fetch(`${API_BASE_URL}/api/PredictUsersByDay`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },  
+                        body: JSON.stringify(requestBody)
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Error response:', errorText);
+                        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Response data:', result);
+                    
+                    showSuccess(submitResult, '🎉 Tahminler başarıyla alındı!');
+                    
+                    if (result.predictions) {
+                        renderPredictionsChart(result.predictions, formattedDate);
+                        showChartSection();
+                    } else {
+                        showError(submitResult, '❌ Tahmin verisi alınamadı.');
+                    }
+                    dataForm.reset();
+                    
+                } catch (error) {
+                    console.error('Full error:', error);
+                    showError(submitResult, `❌ Hata: ${error.message}`);
+                }
+            });
+        });
+
+        // Grafik gösterme
+        function showChartSection() {
+            const chartSection = document.getElementById('chartSection');
+            chartSection.classList.add('show');
+            chartSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Tahmin grafiğini çizen fonksiyon
+        function renderPredictionsChart(predictions, selectedDate) {
+            const ctx = document.getElementById('predictionsChart').getContext('2d');
+            
+            // Mevcut grafiği temizle
+            if (predictionsChart) {
+                predictionsChart.destroy();
+            }
+            
+            // Veriyi hazırla
+            const hours = predictions.map(p => p.saat);
+            const userCounts = predictions.map(p => p.predictedUsers);
+            
+            // Gradyan renkler oluştur
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+            gradient.addColorStop(1, 'rgba(118, 75, 162, 0.1)');
+            
+            // En yüksek değeri bul (vurgu için)
+            const maxValue = Math.max(...userCounts);
+            const maxIndex = userCounts.indexOf(maxValue);
+            
+            // Renk array'i oluştur
+            const backgroundColors = userCounts.map((value, index) => {
+                if (index === maxIndex) {
+                    return 'rgba(231, 76, 60, 0.8)'; // En yüksek değer kırmızı
+                } else if (value > maxValue * 0.8) {
+                    return 'rgba(230, 126, 34, 0.8)'; // Yüksek değerler turuncu
+                } else if (value > maxValue * 0.6) {
+                    return 'rgba(241, 196, 15, 0.8)'; // Orta değerler sarı
+                } else {
+                    return 'rgba(52, 152, 219, 0.8)'; // Düşük değerler mavi
+                }
+            });
+            
+            predictionsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: hours,
+                    datasets: [{
+                        label: 'Tahmini Ziyaretçi Sayısı',
+                        data: userCounts,
+                        backgroundColor: backgroundColors,
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `${selectedDate} Tarihi İçin Saatlik Ziyaretçi Tahmini`,
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#2c3e50'
+                        },
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ziyaretçi Sayısı',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Saat',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeInOutQuart'
+                    }
+                }
+            });
+            
+            // İstatistik kartları oluştur
+            createStatsCards(predictions);
+        }
+
+        // İstatistik kartları oluşturma
+        function createStatsCards(predictions) {
+            const statsGrid = document.getElementById('statsGrid');
+            const userCounts = predictions.map(p => p.predictedUsers);
+            
+            const totalUsers = userCounts.reduce((a, b) => a + b, 0);
+            const avgUsers = Math.round(totalUsers / userCounts.length);
+            const maxUsers = Math.max(...userCounts);
+            const peakHour = predictions[userCounts.indexOf(maxUsers)].saat;
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${totalUsers}</div>
+                    <div class="stat-label">Toplam Ziyaretçi</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgUsers}</div>
+                    <div class="stat-label">Ortalama/Saat</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${maxUsers}</div>
+                    <div class="stat-label">En Yoğun Saat</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${peakHour}</div>
+                    <div class="stat-label">Pik Saat</div>
+                </div>
+            `;
+        }
+
+        // Yardımcı fonksiyonlar
+        function showLoading(element) {
+            element.innerHTML = '⏳ Yükleniyor...';
+            element.className = '';
+        }
+
+        function showSuccess(element, message) {
+            element.innerHTML = message;
+            element.className = 'success';
+        }
+
+        function showError(element, message) {
+            element.innerHTML = message;
+            element.className = 'error';
+        }
+
+        // API test fonksiyonu
+        async function testAPI() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/`);
+                const data = await response.json();
+                console.log('API test successful:', data);
+            } catch (error) {
+                console.error('API test failed:', error);
+            }
+        }
+
+        // Sayfa yüklendiğinde API'yi test et
+        testAPI();
+    </script>
 </body>
 </html>
