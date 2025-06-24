@@ -28,14 +28,10 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
         f"&timezone={timezone.replace('/', '%2F')}"
     )
 
-    proxies = {
-    'http': 'http://proxy:port',
-    'https': 'https://proxy:port'
-    }
     
     try:
         # Timeout ekleyerek isteğin çok uzun sürmesini engelle
-        response = requests.get(url, timeout=10, proxies=proxies)
+        response = requests.get(url, timeout=10)
         
         # HTTP hata kodlarını kontrol et
         response.raise_for_status()
@@ -49,18 +45,7 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
             
         return data
         
-    except ConnectionError:
-        raise ConnectionError("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.")
-    
-    except Timeout:
-        raise Timeout("API isteği zaman aşımına uğradı. Lütfen tekrar deneyin.")
-    
-    except requests.exceptions.HTTPError as e:
-        raise RequestException(f"HTTP hatası: {e.response.status_code} - {e.response.reason}")
-    
-    except requests.exceptions.RequestException as e:
-        raise RequestException(f"İstek hatası: {str(e)}")
-    
+
     except ValueError as e:
         if "JSON" in str(e):
             raise ValueError("API'dan geçersiz JSON verisi alındı")

@@ -18,3 +18,8 @@ app.add_middleware(
 
 app.include_router(user_router, prefix="/api")
 app.include_router(predict_router, prefix="/api")
+
+# Health check endpoint
+@app.get("/")
+async def root():
+    return {"message": "API is running!"}

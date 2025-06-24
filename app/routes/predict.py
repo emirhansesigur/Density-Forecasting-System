@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app.utils.helpers import predict_users_logic
 from app.utils.weather import get_weather_for_datetime_daily, get_weather_for_date_hourly
 
@@ -8,11 +9,17 @@ router = APIRouter()
 LATITUDE = 36.9109
 LONGITUDE = 30.6772
 
+# Pydantic model'ler
+class PredictByHourRequest(BaseModel):
+    zaman: str
+
+class PredictByDayRequest(BaseModel):
+    zaman: str
 
 @router.post("/PredictUsersByHour") 
-def PredictUsersByHour(input_data: dict):
+def PredictUsersByHour(request: PredictByHourRequest):
     try:
-        zaman_str = input_data.get("zaman")
+        zaman_str = request.zaman
         if not zaman_str:
             raise ValueError("zaman alanı zorunludur. (örn: '2025-07-01T17:00:00')")
         try:
@@ -29,9 +36,6 @@ def PredictUsersByHour(input_data: dict):
         ozel_gun_mu = 0
 
         weather = get_weather_for_date_hourly(LATITUDE, LONGITUDE, zaman)
-        
-        # print("weather print edilitor")
-        # print(weather)
 
         features = {
             "saat": saat,
@@ -58,14 +62,14 @@ def PredictUsersByHour(input_data: dict):
 
 
 @router.post("/PredictUsersByDay")
-def PredictUsersByDay(input_data: dict):
+def PredictUsersByDay(request: PredictByDayRequest):
     """
-    input_data: {
+    request: {
         "zaman": "2025-07-01"
     }
     """
     try:
-        zaman_str = input_data.get("zaman")
+        zaman_str = request.zaman
         if not zaman_str:
             raise ValueError("zaman alanı zorunludur. (örn: '2025-07-01')")
 
@@ -129,3 +133,19 @@ def PredictUsersByDay(input_data: dict):
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/test-weather")
+def test_weather():
+    """Hava durumu API'sini test etmek için basit endpoint"""
+    try:
+        from datetime import datetime
+        test_date = datetime(2025, 7, 1)
+        weather_data = get_weather_for_datetime_daily(LATITUDE, LONGITUDE, test_date)
+        return {"status": "success", "data": weather_data}
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error", 
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }
