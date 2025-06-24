@@ -35,33 +35,35 @@ document.addEventListener('DOMContentLoaded', function() {
     dataForm.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const name = document.getElementById('nameInput').value;
-        const email = document.getElementById('emailInput').value;
-        
+        const dateRaw = document.getElementById('dateInput').value;
+        if (!dateRaw) {
+            showError(submitResult, 'Lütfen bir tarih giriniz.');
+            return;
+        }
+        // Tarih formatını YYYY-MM-DD olarak al
+        const date = new Date(dateRaw);
+        const formattedDate = date.toISOString().slice(0, 10); // "2025-06-24" gibi
         try {
             showLoading(submitResult);
-            
-            const response = await fetch(`${API_BASE_URL}/api/submit`, {
+            // PredictUsersByDay endpointine istek at
+            const response = await fetch(`${API_BASE_URL}/api/PredictUsersByDay`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: name,
-                    email: email
-                })
+                },  
+                body: JSON.stringify({ zaman: formattedDate })
             });
-            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
             const result = await response.json();
-            showSuccess(submitResult, `Başarılı! Status: ${result.status}`);
-            
-            // Formu temizle
+            showSuccess(submitResult, 'Tahminler başarıyla alındı.');
+            if (result.predictions) {
+                renderPredictionsTable(result.predictions);
+            } else {
+                showError(submitResult, 'Tahmin verisi alınamadı.');
+            }
             dataForm.reset();
-            
         } catch (error) {
             showError(submitResult, `Hata: ${error.message}`);
         }
@@ -82,6 +84,25 @@ function showSuccess(element, message) {
 function showError(element, message) {
     element.innerHTML = message;
     element.className = 'error';
+}
+
+// Tahmin tablosunu ekrana basan fonksiyon
+function renderPredictionsTable(predictions) {
+    let html = `<table border="1">
+        <tr>
+            <th>Tarih</th>
+            <th>Saat</th>
+            <th>Tahmini Kullanıcı</th>
+        </tr>`;
+    predictions.forEach(item => {
+        html += `<tr>
+            <td>${item.tarih}</td>
+            <td>${item.saat}</td>
+            <td>${item.predictedUsers}</td>
+        </tr>`;
+    });
+    html += `</table>`;
+    document.getElementById("predictionTable").innerHTML = html;
 }
 
 // Gelişmiş API fonksiyonları

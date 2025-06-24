@@ -11,3 +11,5 @@ deactivate
 -------
 
 npx http-server -p 5500
+Frontend:
+python -m http.server 5500
