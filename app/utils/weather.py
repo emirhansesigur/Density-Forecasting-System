@@ -1,14 +1,19 @@
 import requests
 
+
 def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Istanbul"):
     """
     Belirtilen tarih ve saat için sıcaklık, nem ve yağış değerlerini döndürür.
     dt: datetime.datetime nesnesi
+    
+    Raises:
+        ConnectionError: İnternet bağlantısı yoksa
+        Timeout: İstek zaman aşımına uğrarsa
+        RequestException: Diğer HTTP hataları için
+        ValueError: API'dan geçersiz veri gelirse
     """
-
     # Sadece tarih kısmını al (örnek: "2025-06-23")
     date_str = dt.date().isoformat()
-
     HOURLY_PARAMS = [
         "temperature_2m",
         "relative_humidity_2m",
@@ -23,12 +28,45 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
         f"&timezone={timezone.replace('/', '%2F')}"
     )
 
-    response = requests.get(url)
-    data = response.json()
+    proxies = {
+    'http': 'http://proxy:port',
+    'https': 'https://proxy:port'
+    }
+    
+    try:
+        # Timeout ekleyerek isteğin çok uzun sürmesini engelle
+        response = requests.get(url, timeout=10, proxies=proxies)
+        
+        # HTTP hata kodlarını kontrol et
+        response.raise_for_status()
+        
+        # JSON parse etmeye çalış
+        data = response.json()
+        
+        # API'dan beklenen verilerin gelip gelmediğini kontrol et
+        if 'hourly' not in data:
+            raise ValueError("API'dan beklenen veri formatı alınamadı")
+            
+        return data
+        
+    except ConnectionError:
+        raise ConnectionError("İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.")
+    
+    except Timeout:
+        raise Timeout("API isteği zaman aşımına uğradı. Lütfen tekrar deneyin.")
+    
+    except requests.exceptions.HTTPError as e:
+        raise RequestException(f"HTTP hatası: {e.response.status_code} - {e.response.reason}")
+    
+    except requests.exceptions.RequestException as e:
+        raise RequestException(f"İstek hatası: {str(e)}")
+    
+    except ValueError as e:
+        if "JSON" in str(e):
+            raise ValueError("API'dan geçersiz JSON verisi alındı")
+        else:
+            raise e
 
-
-    # Tüm saatlik verileri döndür
-    return data
 
 
 
