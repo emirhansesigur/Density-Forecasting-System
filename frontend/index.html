@@ -249,7 +249,33 @@
             opacity: 0.9;
         }
         
-        /* Weekly Table Styles */
+        /* Week Selector Styles */
+        .week-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .week-label {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.1em;
+            margin-right: 10px;
+        }
+        
+        select.input {
+            min-width: 150px;
+            background: white;
+            cursor: pointer;
+        }
+        
+        select.input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.2);
+        }
         .weekly-table {
             width: 100%;
             border-collapse: collapse;
@@ -350,7 +376,12 @@
         
         <!-- Dashboard Page -->
         <div id="dashboard" class="page active">
-
+            <div class="section">
+                <h3 class="section-title">🎯 Sistem Kontrol Paneli</h3>
+                <button class="btn" onclick="testConnection()">🔌 Bağlantıyı Test Et</button>
+                <div id="connectionResult" class="result"></div>
+            </div>
+            
             <div class="dashboard-cards">
                 <div class="dashboard-card">
                     <h3>📅 Günlük Tahmin</h3>
@@ -390,11 +421,24 @@
         <div id="weekly" class="page">
             <div class="section">
                 <h3 class="section-title">📊 Haftalık Ziyaretçi Tahmini</h3>
-                <form id="weeklyForm">
+                
+                <!-- Week Selection -->
+                <div class="week-selector">
+                    <label for="weekCount" class="week-label">📅 Tahmin Süresi:</label>
+                    <select id="weekCount" class="input" style="width: auto; display: inline-block; margin-right: 20px;">
+                        <option value="1">1 Haftalık</option>
+                        <option value="2">2 Haftalık</option>
+                    </select>
+                    
                     <input type="date" id="weeklyDateInput" class="input" required 
-                           placeholder="Haftalık tahmin başlangıç tarihi">
-                    <button type="submit" class="btn">📈 Haftalık Tahmin Et</button>
-                </form>
+                           placeholder="Tahmin başlangıç tarihi" style="width: auto; display: inline-block;">
+                    
+                    <button type="submit" form="weeklyForm" class="btn" style="margin-left: 15px;">
+                        📈 <span id="submitButtonText">Haftalık</span> Tahmin Et
+                    </button>
+                </div>
+                
+                <form id="weeklyForm" style="display: none;"></form>
                 <div id="weeklyResult" class="result"></div>
             </div>
             
@@ -456,9 +500,20 @@
         document.addEventListener('DOMContentLoaded', function() {
             const dailyForm = document.getElementById('dailyForm');
             const weeklyForm = document.getElementById('weeklyForm');
+            const weekCountSelect = document.getElementById('weekCount');
+            const submitButtonText = document.getElementById('submitButtonText');
             
             dailyForm.addEventListener('submit', handleDailySubmit);
-            weeklyForm.addEventListener('submit', handleWeeklySubmit);
+            
+            // Handle weekly form submission via button click
+            document.querySelector('.week-selector button').addEventListener('click', handleWeeklySubmit);
+            
+            // Update button text when week count changes
+            weekCountSelect.addEventListener('change', function() {
+                const weekCount = this.value;
+                const buttonText = weekCount === '1' ? 'Haftalık' : `${weekCount} Haftalık`;
+                submitButtonText.textContent = buttonText;
+            });
             
             // Set default dates
             const today = new Date().toISOString().slice(0, 10);
@@ -510,6 +565,7 @@
             e.preventDefault();
             
             const startDate = document.getElementById('weeklyDateInput').value;
+            const weekCount = parseInt(document.getElementById('weekCount').value);
             const resultDiv = document.getElementById('weeklyResult');
             
             if (!startDate) {
@@ -517,12 +573,14 @@
                 return;
             }
             
+            const totalDays = weekCount * 7;
+            
             try {
-                showLoading(resultDiv);
+                showLoading(resultDiv, `${weekCount} haftalık veriler alınıyor... (${totalDays} gün)`);
                 weeklyData = [];
                 
-                // Get predictions for 7 days
-                for (let i = 0; i < 7; i++) {
+                // Get predictions for selected weeks
+                for (let i = 0; i < totalDays; i++) {
                     const currentDate = new Date(startDate);
                     currentDate.setDate(currentDate.getDate() + i);
                     const dateStr = currentDate.toISOString().slice(0, 10);
@@ -542,13 +600,18 @@
                         weeklyData.push({
                             date: dateStr,
                             dayName: turkishDays[currentDate.getDay()],
-                            predictions: result.predictions
+                            predictions: result.predictions,
+                            weekNumber: Math.floor(i / 7) + 1
                         });
                     }
+                    
+                    // Update progress
+                    const progress = Math.round(((i + 1) / totalDays) * 100);
+                    resultDiv.innerHTML = `⏳ ${weekCount} haftalık veriler alınıyor... ${progress}% (${i + 1}/${totalDays} gün)`;
                 }
                 
-                showSuccess(resultDiv, '🎉 Haftalık tahmin başarıyla alındı!');
-                renderWeeklyTable();
+                showSuccess(resultDiv, `🎉 ${weekCount} haftalık tahmin başarıyla alındı! (${totalDays} gün)`);
+                renderWeeklyTable(weekCount);
                 document.getElementById('weeklyDataSection').style.display = 'block';
                 document.getElementById('weeklyDataSection').scrollIntoView({ behavior: 'smooth' });
                 
@@ -670,8 +733,12 @@
         }
         
         // Render Weekly Table
-        function renderWeeklyTable() {
+        function renderWeeklyTable(weekCount = 1) {
             const container = document.getElementById('weeklyTableContainer');
+            const sectionTitle = document.querySelector('#weeklyDataSection .section-title');
+            
+            // Update section title
+            sectionTitle.textContent = `📋 ${weekCount} Haftalık Ziyaretçi Detay Tablosu`;
             
             // Calculate min/max values for color scaling
             let allValues = [];
@@ -685,45 +752,68 @@
             const maxValue = Math.max(...allValues);
             const range = maxValue - minValue;
             
-            // Create table
-            let tableHTML = `
-                <table class="weekly-table">
-                    <thead>
-                        <tr>
-                            <th>Gün</th>
-                            <th>Tarih</th>
-                            ${weeklyData[0].predictions.map(p => `<th>${p.saat}</th>`).join('')}
-                            <th>Günlük Toplam</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
+            // Group data by weeks
+            const weeks = [];
+            for (let i = 0; i < weekCount; i++) {
+                const weekData = weeklyData.slice(i * 7, (i + 1) * 7);
+                if (weekData.length > 0) {
+                    weeks.push({
+                        weekNumber: i + 1,
+                        days: weekData
+                    });
+                }
+            }
             
-            weeklyData.forEach(day => {
-                const dayTotal = day.predictions.reduce((sum, pred) => sum + pred.predictedUsers, 0);
+            // Create table for each week
+            let tablesHTML = '';
+            
+            weeks.forEach(week => {
+                tablesHTML += `
+                    <div class="week-section">
+                        <h4 class="week-title">${week.weekNumber}. Hafta</h4>
+                        <table class="weekly-table">
+                            <thead>
+                                <tr>
+                                    <th>Gün</th>
+                                    <th>Tarih</th>
+                                    ${week.days[0].predictions.map(p => `<th>${p.saat}</th>`).join('')}
+                                    <th>Günlük Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
                 
-                tableHTML += `
-                    <tr>
-                        <td class="day-name">${day.dayName}</td>
-                        <td class="day-name">${day.date}</td>
-                        ${day.predictions.map(pred => {
-                            const intensity = Math.ceil(((pred.predictedUsers - minValue) / range) * 10);
-                            return `<td class="intensity-${intensity}">${pred.predictedUsers}</td>`;
-                        }).join('')}
-                        <td class="day-name">${dayTotal}</td>
-                    </tr>
+                week.days.forEach(day => {
+                    const dayTotal = day.predictions.reduce((sum, pred) => sum + pred.predictedUsers, 0);
+                    
+                    tablesHTML += `
+                        <tr>
+                            <td class="day-name">${day.dayName}</td>
+                            <td class="day-name">${day.date}</td>
+                            ${day.predictions.map(pred => {
+                                const intensity = Math.ceil(((pred.predictedUsers - minValue) / range) * 10);
+                                return `<td class="intensity-${intensity}">${pred.predictedUsers}</td>`;
+                            }).join('')}
+                            <td class="day-name">${dayTotal}</td>
+                        </tr>
+                    `;
+                });
+                
+                tablesHTML += `
+                            </tbody>
+                        </table>
+                    </div>
                 `;
             });
             
-            tableHTML += '</tbody></table>';
-            container.innerHTML = tableHTML;
+            container.innerHTML = tablesHTML;
             
             // Create weekly summary
-            createWeeklySummary(allValues);
+            createWeeklySummary(allValues, weekCount);
         }
         
         // Create Weekly Summary
-        function createWeeklySummary(allValues) {
+        function createWeeklySummary(allValues, weekCount) {
             const summaryDiv = document.getElementById('weeklySummary');
             
             const total = allValues.reduce((a, b) => a + b, 0);
@@ -735,21 +825,26 @@
             let peakDay = '';
             let peakHour = '';
             let peakValue = 0;
+            let peakWeek = 1;
             
-            weeklyData.forEach(day => {
+            weeklyData.forEach((day, index) => {
                 day.predictions.forEach(pred => {
                     if (pred.predictedUsers > peakValue) {
                         peakValue = pred.predictedUsers;
                         peakDay = day.dayName;
                         peakHour = pred.saat;
+                        peakWeek = Math.floor(index / 7) + 1;
                     }
                 });
             });
             
+            const totalDays = weekCount * 7;
+            const summaryTitle = weekCount === 1 ? 'Haftalık' : `${weekCount} Haftalık`;
+            
             summaryDiv.innerHTML = `
                 <div class="summary-card total">
                     <div class="stat-value">${total}</div>
-                    <div class="stat-label">Haftalık Toplam</div>
+                    <div class="stat-label">${summaryTitle} Toplam</div>
                 </div>
                 <div class="summary-card avg">
                     <div class="stat-value">${avg}</div>
@@ -771,12 +866,22 @@
                     <div class="stat-value">${peakHour}</div>
                     <div class="stat-label">Pik Saat</div>
                 </div>
+                ${weekCount > 1 ? `
+                <div class="summary-card max">
+                    <div class="stat-value">${peakWeek}. Hafta</div>
+                    <div class="stat-label">Pik Hafta</div>
+                </div>
+                <div class="summary-card total">
+                    <div class="stat-value">${totalDays}</div>
+                    <div class="stat-label">Toplam Gün</div>
+                </div>
+                ` : ''}
             `;
         }
         
         // Utility Functions
-        function showLoading(element) {
-            element.innerHTML = '⏳ Yükleniyor...';
+        function showLoading(element, message = '⏳ Yükleniyor...') {
+            element.innerHTML = message;
             element.className = 'result';
         }
         
