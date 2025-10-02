@@ -3,48 +3,63 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel
 from app.utils.helpers import predict_users_logic
 from app.utils.weather import get_weather_for_datetime_daily, get_weather_for_date_hourly
+from app.utils.branch import BranchLocation
 
 router = APIRouter()
 
-LATITUDE = 36.9109
-LONGITUDE = 30.6772
-
 # Pydantic model'ler
 class PredictByHourRequest(BaseModel):
-    zaman: str
+    branch: int
+    date: str
+    isSpecialDay: bool = False
 
 class PredictByDayRequest(BaseModel):
-    zaman: str
+    branch: int
+    date: str
+    isSpecialDay: bool = False
 
 @router.post("/PredictUsersByHour") 
 def PredictUsersByHour(request: PredictByHourRequest):
     try:
-        zaman_str = request.zaman
-        if not zaman_str:
-            raise ValueError("zaman alanı zorunludur. (örn: '2025-07-01T17:00:00')")
+        branch = request.branch
+        date_str = request.date
+        isSpecialDay = 1 if request.isSpecialDay else 0
+
+        if not date_str:
+            raise ValueError("date alanı zorunludur. (örn: '2025-07-01T17:00:00')")
         try:
-            zaman = datetime.fromisoformat(zaman_str)
+            date = datetime.fromisoformat(date_str)
         except Exception:
-            raise ValueError("zaman alanı ISO formatında olmalıdır. (örn: '2025-07-01T17:00:00')")
-        saat = zaman.hour
-        gün = zaman.day
-        ay = zaman.month
-        yıl = zaman.year
+            raise ValueError("date alanı ISO formatında olmalıdır. (örn: '2025-07-01T17:00:00')")
 
-        haftanin_gunu = zaman.weekday()  # Pazartesi=0, Pazar=6
-        hafta_sonu_mu = 1 if haftanin_gunu in [5, 6] else 0
-        ozel_gun_mu = 0
 
-        weather = get_weather_for_date_hourly(LATITUDE, LONGITUDE, zaman)
+        try:
+            # Düzeltilmiş enum kullanımı
+            latitude, longitude = BranchLocation.get_coordinates(branch)
+            branch_name = BranchLocation.get_name(branch)
+            print(f"Using branch {branch} ({branch_name}) with coordinates: ({latitude}, {longitude})")
+        except Exception:
+            raise ValueError("Geçersiz branch ID veya branch enum'u bulunamadı.")
 
+
+        hour = date.hour
+        day = date.day
+        month = date.month
+        year = date.year
+
+        dayOfWeek = date.weekday()  # Pazartesi=0, Pazar=6
+        isWeekendEnd = 1 if dayOfWeek in [5, 6] else 0
+        
+        weather = get_weather_for_date_hourly(latitude, longitude, date)
+        
         features = {
-            "saat": saat,
-            "gün": gün,
-            "ay": ay,
-            "yıl": yıl,
-            "haftanin_gunu": haftanin_gunu,
-            "hafta_sonu_mu": hafta_sonu_mu,
-            "ozel_gun_mu": ozel_gun_mu,
+            "saat": hour,
+            "gün": day,
+            "ay": month,
+            "yıl": year,
+            "haftanin_gunu": dayOfWeek,
+            "hafta_sonu_mu": isWeekendEnd,
+            "ozel_gun_mu": isSpecialDay,
             "temperature": weather["temperature"],
             "humidity": weather["humidity"],
             "precipitation": weather["precipitation"]
@@ -53,99 +68,88 @@ def PredictUsersByHour(request: PredictByHourRequest):
         result = predict_users_logic(features)
 
         return {
-            "tarih": zaman.strftime("%Y-%m-%d"),
-            "saat": zaman.strftime("%H:%M"),
+            "date": date.strftime("%Y-%m-%d"),
+            "hour": date.strftime("%H:%M"),
+            "branch": branch_name,
+            "isSpecialDay": bool(isSpecialDay),
             "predicted_users": result
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
 @router.post("/PredictUsersByDay")
 def PredictUsersByDay(request: PredictByDayRequest):
-    """
-    request: {
-        "zaman": "2025-07-01"
-    }
-    """
     try:
-        zaman_str = request.zaman
-        if not zaman_str:
-            raise ValueError("zaman alanı zorunludur. (örn: '2025-07-01')")
-
+        branch = request.branch
+        date_str = request.date
+        isSpecialDay = 1 if request.isSpecialDay else 0
+        
+        if not date_str:
+            raise ValueError("date alanı zorunludur. (örn: '2025-10-02')")
+        
         try:
-            zaman = datetime.fromisoformat(zaman_str)
+            # Sadece tarih kısmını parse et
+            date = datetime.fromisoformat(date_str)
         except Exception:
-            raise ValueError("zaman alanı ISO formatında olmalıdır. (örn: '2025-07-01')")
-
-        gün = zaman.day
-        ay = zaman.month
-        yıl = zaman.year
-
-        haftanin_gunu = zaman.weekday()  # Pazartesi=0, Pazar=6
-        hafta_sonu_mu = 1 if haftanin_gunu in [5, 6] else 0
-        ozel_gun_mu = 0
-
-        # Veri getirme
-        full_weather = get_weather_for_datetime_daily(LATITUDE, LONGITUDE, zaman)
-        hourly_data = full_weather["hourly"]
-
-        weather_times = hourly_data["time"]
-        temperatures = hourly_data["temperature_2m"]
-        humidities = hourly_data["relative_humidity_2m"]
-        precipitations = hourly_data["precipitation"]
-
-        results = []
-
-        for saat in range(9, 22):  # 09:00 - 21:00 arası
-            target_time_str = zaman.replace(hour=saat).strftime("%Y-%m-%dT%H:00")
+            raise ValueError("date alanı ISO formatında olmalıdır. (örn: '2025-10-02')")
+        
+        try:
+            latitude, longitude = BranchLocation.get_coordinates(branch)
+            branch_name = BranchLocation.get_name(branch)
+            print(f"Using branch {branch} ({branch_name}) with coordinates: ({latitude}, {longitude})")
+        except Exception:
+            raise ValueError("Geçersiz branch ID veya branch enum'u bulunamadı.")
+        
+        # Temel tarih bilgileri
+        day = date.day
+        month = date.month
+        year = date.year
+        dayOfWeek = date.weekday()  # Pazartesi=0, Pazar=6
+        isWeekendEnd = 1 if dayOfWeek in [5, 6] else 0
+        
+        # 10:00 - 21:00 arası tahminler
+        hourly_predictions = []
+        
+        for hour in range(10, 22):  # 10'dan 21'e kadar (21 dahil)
+            # O saate ait datetime oluştur
+            current_datetime = date.replace(hour=hour, minute=0, second=0, microsecond=0)
             
-            if target_time_str in weather_times:
-                idx = weather_times.index(target_time_str)
-
-                features = {
-                    "saat": saat,
-                    "gün": gün,
-                    "ay": ay,
-                    "yıl": yıl,
-                    "haftanin_gunu": haftanin_gunu,
-                    "hafta_sonu_mu": hafta_sonu_mu,
-                    "ozel_gun_mu": ozel_gun_mu,
-                    "temperature": temperatures[idx],
-                    "humidity": humidities[idx],
-                    "precipitation": precipitations[idx]
-                }
-
-                user_count = predict_users_logic(features)
-
-                print(temperatures[idx], humidities[idx], precipitations[idx])
-                print(f"Predicted users for {zaman.strftime('%Y-%m-%d')} at {saat}:00 -> {user_count}")
-
-                results.append({
-                    "tarih": zaman.strftime("%Y-%m-%d"),
-                    "saat": f"{saat:02d}:00",
-                    "predictedUsers": user_count
-                })
-            else:
-                raise ValueError(f"{target_time_str} saatlik verisi bulunamadı.")
-
-        return {"predictions": results}
-
+            # Hava durumu bilgisini al
+            weather = get_weather_for_date_hourly(latitude, longitude, current_datetime)
+            
+            # Tahmin için features hazırla
+            features = {
+                "saat": hour,
+                "gün": day,
+                "ay": month,
+                "yıl": year,
+                "haftanin_gunu": dayOfWeek,
+                "hafta_sonu_mu": isWeekendEnd,
+                "ozel_gun_mu": isSpecialDay,
+                "temperature": weather["temperature"],
+                "humidity": weather["humidity"],
+                "precipitation": weather["precipitation"]
+            }
+            
+            # Tahmin yap
+            predicted_users = predict_users_logic(features)
+            
+            # Sonucu listeye ekle
+            hourly_predictions.append({
+                "hour": f"{hour:02d}:00",
+                "predicted_users": predicted_users,
+                "temperature": weather["temperature"],
+                "humidity": weather["humidity"],
+                "precipitation": weather["precipitation"]
+            })
+        
+        return {
+            "date": date.strftime("%Y-%m-%d"),
+            "branch": branch_name,
+            "isSpecialDay": bool(isSpecialDay),
+            "hourly_predictions": hourly_predictions,
+            "total_predicted_users": sum(pred["predicted_users"] for pred in hourly_predictions)
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-@router.get("/test-weather")
-def test_weather():
-    """Hava durumu API'sini test etmek için basit endpoint"""
-    try:
-        from datetime import datetime
-        test_date = datetime(2025, 7, 1)
-        weather_data = get_weather_for_datetime_daily(LATITUDE, LONGITUDE, test_date)
-        return {"status": "success", "data": weather_data}
-    except Exception as e:
-        import traceback
-        return {
-            "status": "error", 
-            "error": str(e),
-            "traceback": traceback.format_exc()
-        }
