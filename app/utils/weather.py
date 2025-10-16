@@ -55,7 +55,7 @@ def get_weather_for_datetime_daily(latitude, longitude, dt, timezone="Europe/Ist
 
 
 
-def get_weather_for_date_hourly(latitude, longitude, dt, timezone="Europe/Istanbul"):
+def getWeatherForDateHourly(latitude, longitude, dt, timezone="Europe/Istanbul"):
     """
     Belirtilen tarih ve saat için sıcaklık, nem ve yağış değerlerini döndürür.
     dt: datetime.datetime nesnesi

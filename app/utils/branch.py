@@ -10,13 +10,15 @@ class BranchLocation(Enum):
         "name": "Antalya"
     }
     
-    # İleride başka şubeler eklenebilir
-    # ISTANBUL = {
-    #     "latitude": 41.0082,
-    #     "longitude": 28.9784,
-    #     "name": "Istanbul"
-    # }
     
+    ISTANBUL = {
+        "latitude": 41.0082,
+        "longitude": 28.9784,
+        "name": "Istanbul"
+    }
+    
+
+    #  İleride başka şubeler eklenebilir
     # ANKARA = {
     #     "latitude": 39.9334,
     #     "longitude": 32.8597,
@@ -30,7 +32,7 @@ class BranchLocation(Enum):
         """
         branch_map = {
             1: cls.ANTALYA,
-            # 2: cls.ISTANBUL,
+            2: cls.ISTANBUL,
             # 3: cls.ANKARA,
         }
         
