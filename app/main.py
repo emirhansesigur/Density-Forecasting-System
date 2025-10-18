@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.routes.predict import router as predict_router
+from app.routes.forecast import router as forecast_router
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -16,6 +17,7 @@ app.add_middleware(
 
 
 app.include_router(predict_router, prefix="/api")
+app.include_router(forecast_router, prefix="/api")
 
 # Health check endpoint
 @app.get("/")

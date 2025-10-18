@@ -65,7 +65,7 @@ def PredictUsersByHour(request: PredictByHourRequest):
             "precipitation": weather["precipitation"]
         }
         
-        result = predictionLogic(features)
+        result = predictionLogic(features, branchId)
 
         return {
             "date": date.strftime("%Y-%m-%d"),
@@ -134,7 +134,7 @@ def PredictUsersByDay(request: PredictByDayRequest):
             }
             
             # Tahmin yap
-            predictedUsers = predictionLogic(features)
+            predictedUsers = predictionLogic(features, branchId)
             
             # Sonucu listeye ekle
             hourlyPredictions.append({

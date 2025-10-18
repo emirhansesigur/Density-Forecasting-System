@@ -1,3 +1,8 @@
+#Model files 
+app/Models
+*.pkl
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -73,9 +78,6 @@ instance/
 
 # Mac
 .DS_Store
-
-# Model files
-*.pkl
 
 # Logs
 *.log
