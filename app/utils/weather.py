@@ -88,7 +88,6 @@ def getWeatherForDateHourly(latitude, longitude, dt, timezone="Europe/Istanbul")
         temperature = temperatures[idx]
         humidity = humidities[idx]
         precipitation = precipitations[idx]
-        print(f"Weather for {dt_str}: {temperature}°C, {humidity}%, {precipitation}mm")
         return {
             "temperature": temperature,
             "humidity": humidity,

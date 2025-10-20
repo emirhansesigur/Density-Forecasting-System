@@ -1,27 +1,92 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime, timedelta
 from pydantic import BaseModel
-from app.utils.helpers import predictionLogic
+from app.utils.helpers import forecastingLogic
 from app.utils.weather import get_weather_for_datetime_daily, getWeatherForDateHourly
 from app.utils.branch import BranchLocation
 
 router = APIRouter()
 
-# Pydantic model
 class ForecastRequest(BaseModel):
-    branchId: int
     date: str
-    isSpecialDay: bool = False
+    branchId: int
+    isSpecialDay: bool
 
 
 @router.post("/forecast")
-def forecast(request: ForecastRequest):
+def PredictGamesByDay(request: ForecastRequest):
     try:
-        branchId = request.branchId
         date_str = request.date
-        isSpecialDay = 1 if request.isSpecialDay else 0
-        
-        print(f"Received forecast request: branchId={branchId}, date={date_str}, isSpecialDay={isSpecialDay}")
+        branchId = request.branchId
+        isSpecialDay = request.isSpecialDay
+
+        if not date_str:
+            raise ValueError("Date is required (e.g. '2025-10-02')")
+
+        if branchId is None:
+            raise ValueError("Branch ID is required.")
+
+        if isSpecialDay is None:
+            raise ValueError("Special day is required.")
+
+        try:
+            date = datetime.fromisoformat(date_str)
+        except Exception:
+            raise ValueError("Date must be in ISO format. (e.g. '2025-10-02')")
+
+        try:
+            latitude, longitude = BranchLocation.get_coordinates(branchId)
+            branch_name = BranchLocation.get_name(branchId)
+            print(f"Using branch {branchId} ({branch_name}) with coordinates: ({latitude}, {longitude})")
+        except Exception:
+            raise ValueError("Geçersiz branch ID veya branch enum'u bulunamadı.")
+
+
+        day = date.day
+        month = date.month
+        year = date.year
+        dayOfWeek = date.weekday()
+        isWeekend = 1 if dayOfWeek in [5, 6] else 0
+
+        hourlyPredictions = []
+
+        for hour in range(10, 22):  # 10:00 - 21:00
+            # O saate ait datetime oluştur
+            current_datetime = date.replace(hour=hour, minute=0, second=0, microsecond=0)
+            
+            weather = getWeatherForDateHourly(latitude, longitude, current_datetime)
+
+            inputData = {
+                "hour": hour,
+                "day": day,
+                "month": month,
+                "year": year,
+                "dayOfWeek": dayOfWeek,
+                "isWeekend": isWeekend,
+                "temperature": weather["temperature"],
+                "humidity": weather["humidity"],
+                "precipitation": weather["precipitation"],
+                "branchId": branchId,
+                "isSpecialDay": isSpecialDay
+            }
+
+            predicted_games = forecastingLogic(inputData)
+
+            hourlyPredictions.append({
+                "hour": f"{hour:02d}:00",
+                "predictedGames": round(predicted_games, 2),
+                "temperature": weather["temperature"],
+                "humidity": weather["humidity"],
+                "precipitation": weather["precipitation"]
+            })
+
+        totalPredictedGames = sum(item["predictedGames"] for item in hourlyPredictions)
+
+        return {
+            "date": date.strftime("%Y-%m-%d"),
+            "totalPredictedGames": round(totalPredictedGames, 2),
+            "hourlyPredictions": hourlyPredictions
+        }
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
