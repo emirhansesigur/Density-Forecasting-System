@@ -1,12 +1,5 @@
-import joblib
 import pandas as pd
-import os
-
-model_path = "app/models/Antalya/antalya_games_rf_model.pkl"
-if not os.path.exists(model_path):
-    raise FileNotFoundError(f"{model_path} dosyası bulunamadı. Lütfen modeli yükleyin.")
-
-model = joblib.load(model_path)
+from app.utils.model_manager import model_manager
 
 def get_hour_group(hour: int) -> str:
     if 9 <= hour <= 12:
@@ -26,29 +19,20 @@ def get_season(month: int) -> str:
     else:
         return 'fall'
 
-
-
 def forecastingLogic(inputData: dict):
-    """
-    {
-        "branchId": 1,
-        "hour": 10,
-        "day": 5,
-        "month": 10,
-        "year": 2025,
-        "dayOfWeek": 6,
-        "isWeekend": 1,
-        "temperature": 25.5,
-        "humidity": 60,
-        "precipitation": 50.0
-    }
-    """
-    print(f"branchId: {inputData["branchId"]} - Predicting with model...")
 
+    branch_id = inputData["branchId"]
+    
+    try:
+        model = model_manager.get_model(branch_id)
+    except ValueError as e:
+        raise ValueError(f"Model yükleme hatasi: {str(e)}")
+    
+    print(f"branchId: {branch_id} - Predicting with model...")
+    
     hour_group = get_hour_group(inputData["hour"])
     season = get_season(inputData["month"])
-
-
+    
     model_features = {
         "hour": inputData["hour"],
         "day": inputData["day"],
@@ -68,13 +52,11 @@ def forecastingLogic(inputData: dict):
         "season_summer": 1 if season == "summer" else 0,
         "season_winter": 1 if season == "winter" else 0
     }
-
+    
     df_features = pd.DataFrame([model_features])
-
     predicted_value = model.predict(df_features)[0]
-
+    
     return int(predicted_value)
-
 
 def predictionLogic(input_data, branchId):
     print(f"Predicting with model for branch ID: {branchId}")
