@@ -2,10 +2,10 @@
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from pydantic import BaseModel
-from app.utils.helpers import forecastingLogic
+from app.utils.forecastingLogic import forecastingLogic
 from app.utils.weather import getWeatherForDateHourly
 from app.utils.branch import BranchLocation
-from app.utils.model_manager import model_manager
+from app.utils.modelManager import modelManager
 
 router = APIRouter()
 
@@ -17,26 +17,26 @@ class ForecastRequest(BaseModel):
 @router.post("/forecast")
 def PredictGamesByDay(request: ForecastRequest):
     try:
-        date_str = request.date
+        dateStr = request.date
         branchId = request.branchId
         isSpecialDay = request.isSpecialDay
 
-        if not date_str:
+        if not dateStr:
             raise ValueError("Date is required (e.g. '2025-10-02')")
         if branchId is None:
             raise ValueError("Branch ID is required.")
         if isSpecialDay is None:
             raise ValueError("Special day is required.")
 
-        if not model_manager.is_model_loaded(branchId):
-            available = model_manager.get_loaded_branches()
+        if not modelManager.is_model_loaded(branchId):
+            available = modelManager.get_loaded_branches()
             raise ValueError(
-                f"Branch ID {branchId} için model yüklü değil. "
-                f"Mevcut branch'ler: {available}"
+                f"Model is not loaded for Branch ID {branchId}. "
+                f"Available branches: {available}"
             )
 
         try:
-            date = datetime.fromisoformat(date_str)
+            date = datetime.fromisoformat(dateStr)
         except Exception:
             raise ValueError("Date must be in ISO format. (e.g. '2025-10-02')")
 

@@ -5,7 +5,7 @@ from app.utils.branch import BranchLocation
 
 #Todo: uzun süre istek atılmazsa modeli bellekten atıp istek atılınca tekrar yükleme
 class ModelManager:
-    #Tüm şube modellerini yöneten singleton sinif
+    # Singleton class that manages all branch models
 
     _instance = None
     _models: Dict[int, any] = {}
@@ -17,9 +17,6 @@ class ModelManager:
         return cls._instance
     
     def _load_models(self):
-        """
-        Tüm modelleri başlangiçta yükle
-        """
         model_paths = {
             1: "app/models/Antalya/antalya_games_rf_model.pkl",
             2: "app/models/Istanbul/istanbul_games_rf_model.pkl"
@@ -30,9 +27,9 @@ class ModelManager:
                 try:
                     self._models[branch_id] = joblib.load(model_path)
                     branch_name = BranchLocation.get_name(branch_id)
-                    print(f"{branch_name} modeli yüklendi: {model_path}")
+                    print(f"{branch_name} model loaded from {model_path}")
                 except Exception as e:
-                    print(f"{model_path} yüklenirken hata: {str(e)}")
+                    print(f"Error loading {model_path}: {str(e)}")
             else:
                 print(f"Model file not found: {model_path}")
     
@@ -53,4 +50,4 @@ class ModelManager:
         return list(self._models.keys())
 
 # Singleton instance
-model_manager = ModelManager()
+modelManager = ModelManager()

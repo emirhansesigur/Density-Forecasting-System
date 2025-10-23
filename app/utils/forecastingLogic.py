@@ -1,5 +1,5 @@
 import pandas as pd
-from app.utils.model_manager import model_manager
+from app.utils.modelManager import modelManager
 
 def get_hour_group(hour: int) -> str:
     if 9 <= hour <= 12:
@@ -24,9 +24,9 @@ def forecastingLogic(inputData: dict):
     branch_id = inputData["branchId"]
     
     try:
-        model = model_manager.get_model(branch_id)
+        model = modelManager.get_model(branch_id)
     except ValueError as e:
-        raise ValueError(f"Model yükleme hatasi: {str(e)}")
+        raise ValueError(f"Model loading error: {str(e)}")
     
     print(f"branchId: {branch_id} - Predicting with model...")
     
@@ -57,9 +57,3 @@ def forecastingLogic(inputData: dict):
     predicted_value = model.predict(df_features)[0]
     
     return int(predicted_value)
-
-def predictionLogic(input_data, branchId):
-    print(f"Predicting with model for branch ID: {branchId}")
-    input_df = pd.DataFrame([input_data])
-    prediction = model.predict(input_df)
-    return int(prediction[0])
