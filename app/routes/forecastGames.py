@@ -1,4 +1,3 @@
-# app/routers/forecast.py
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 from pydantic import BaseModel
@@ -14,8 +13,8 @@ class ForecastRequest(BaseModel):
     branchId: int
     isSpecialDay: bool
 
-@router.post("/forecast")
-def PredictGamesByDay(request: ForecastRequest):
+@router.post("/forecastGames")
+def ForecastGamesByDay(request: ForecastRequest):
     try:
         dateStr = request.date
         branchId = request.branchId
@@ -74,7 +73,7 @@ def PredictGamesByDay(request: ForecastRequest):
                 "isSpecialDay": isSpecialDay
             }
             
-            predicted_games = forecastingLogic(inputData)
+            predicted_games = forecastingLogic(inputData, "games")
             
             hourlyPredictions.append({
                 "hour": f"{hour:02d}:00",
@@ -88,6 +87,7 @@ def PredictGamesByDay(request: ForecastRequest):
         
         return {
             "date": date.strftime("%Y-%m-%d"),
+            "branchId": branchId,
             "branchName": branch_name,
             "totalPredictedGames": round(totalPredictedGames, 2),
             "hourlyPredictions": hourlyPredictions
@@ -95,3 +95,4 @@ def PredictGamesByDay(request: ForecastRequest):
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+

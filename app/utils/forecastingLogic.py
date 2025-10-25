@@ -19,16 +19,15 @@ def get_season(month: int) -> str:
     else:
         return 'fall'
 
-def forecastingLogic(inputData: dict):
-
+def forecastingLogic(inputData: dict, model_type: str):
     branch_id = inputData["branchId"]
     
     try:
-        model = modelManager.get_model(branch_id)
+        model = modelManager.get_model(branch_id, model_type)
     except ValueError as e:
         raise ValueError(f"Model loading error: {str(e)}")
     
-    print(f"branchId: {branch_id} - Predicting with model...")
+    print(f"branchId: {branch_id} - Predicting with {model_type} model...")
     
     hour_group = get_hour_group(inputData["hour"])
     season = get_season(inputData["month"])
